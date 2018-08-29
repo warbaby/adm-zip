@@ -1,6 +1,7 @@
 var Utils = require("./util");
 var fs = Utils.FileSystem.require(),
-	pth = require("path");
+	pth = require("path"),
+	iconv = require('iconv-lite');
 
 fs.existsSync = fs.existsSync || pth.existsSync;
 
@@ -10,21 +11,21 @@ var ZipEntry = require("./zipEntry"),
 var isWin = /^win/.test(process.platform);
 
 
-module.exports = function (/*String*/input) {
+module.exports = function (/*String*/input, /*String*/nameEncoding) {
 	var _zip = undefined,
 		_filename = "";
 
 	if (input && typeof input === "string") { // load zip file
 		if (fs.existsSync(input)) {
 			_filename = input;
-			_zip = new ZipFile(input, Utils.Constants.FILE);
+			_zip = new ZipFile(input, Utils.Constants.FILE, nameEncoding);
 		} else {
 			throw Utils.Errors.INVALID_FILENAME;
 		}
 	} else if (input && Buffer.isBuffer(input)) { // load buffer
-		_zip = new ZipFile(input, Utils.Constants.BUFFER);
+		_zip = new ZipFile(input, Utils.Constants.BUFFER, nameEncoding);
 	} else { // create new zip file
-		_zip = new ZipFile(null, Utils.Constants.NONE);
+		_zip = new ZipFile(null, Utils.Constants.NONE, nameEncoding);
 	}
 
 	function sanitize(prefix, name) {
@@ -294,7 +295,11 @@ module.exports = function (/*String*/input) {
 		 */
 		addFile: function (/*String*/entryName, /*Buffer*/content, /*String*/comment, /*Number*/attr) {
 			var entry = new ZipEntry();
-			entry.entryName = entryName;
+			if (_zip.nameEncoding) {
+				entry.entryName = iconv.encode(Buffer.from(entryName), _zip.nameEncoding);
+			} else {
+				entry.entryName = entryName;
+			}
 			entry.comment = comment || "";
 
 			if (!attr) {

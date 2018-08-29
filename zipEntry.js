@@ -192,6 +192,7 @@ module.exports = function (/*Buffer*/input) {
     return {
         get entryName () { return _entryName.toString(); },
         get rawEntryName() { return _entryName; },
+        set rawEntryName(val) { _entryName = val; },
         set entryName (val) {
             _entryName = Utils.toBuffer(val);
             var lastChar = _entryName[_entryName.length - 1];

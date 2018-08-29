@@ -1,11 +1,13 @@
 var ZipEntry = require("./zipEntry"),
 	Headers = require("./headers"),
-	Utils = require("./util");
+	Utils = require("./util"),
+	iconv = require('iconv-lite');
 
-module.exports = function (/*String|Buffer*/input, /*Number*/inputType) {
+module.exports = function (/*String|Buffer*/input, /*Number*/inputType, /*String*/nameEncoding) {
 	var entryList = [],
 		entryTable = {},
 		_comment = Buffer.alloc(0),
+		_nameEncoding = nameEncoding,
 		filename = "",
 		fs = Utils.FileSystem.require(),
 		inBuffer = null,
@@ -35,6 +37,9 @@ module.exports = function (/*String|Buffer*/input, /*Number*/inputType) {
 			entry.header = inBuffer.slice(tmp, tmp += Utils.Constants.CENHDR);
 
 			entry.entryName = inBuffer.slice(tmp, tmp += entry.header.fileNameLength);
+			if (_nameEncoding) {
+				entry.rawEntryName = iconv.decode(entry.rawEntryName, _nameEncoding);
+			}
 
 			if (entry.header.extraLength) {
 				entry.extra = inBuffer.slice(tmp, tmp += entry.header.extraLength);
@@ -79,6 +84,10 @@ module.exports = function (/*String|Buffer*/input, /*Number*/inputType) {
 		 */
 		get entries() {
 			return entryList;
+		},
+
+		get nameEncoding() {
+			return _nameEncoding;
 		},
 
 		/**
